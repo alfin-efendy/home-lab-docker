@@ -1,0 +1,35 @@
+services:
+  dashy:
+    container_name: dashy
+    hostname: dashy
+    image: lissy93/dashy
+    restart: always
+    volumes:
+      - ./config/dashy.yml:/app/user-data/conf.yml
+    environment:
+      - NODE_ENV=production
+    healthcheck:
+      test: ['CMD', 'node', '/app/services/healthcheck']
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - micro-service-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashy.rule=Host(`dash.local.home-project.online`)"
+      - "traefik.http.routers.dashy.entrypoints=web"
+      - "traefik.http.routers.dashy.middlewares=https-redirect"
+      - "traefik.http.routers.dashy-secure.rule=Host(`dash.local.home-project.online`)"
+      - "traefik.http.routers.dashy-secure.entrypoints=websecure"
+      - "traefik.http.routers.dashy-secure.service=dashy"
+      - "traefik.http.routers.dashy-secure.tls=true"
+      - "traefik.http.routers.dashy-secure.tls.certresolver=cloudflare"
+      - "traefik.http.services.dashy.loadbalancer.server.port=8080"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.ssl-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      
+networks:
+  micro-service-network:
+    external: true

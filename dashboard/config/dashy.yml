@@ -1,0 +1,13 @@
+pageInfo:
+  title: Home Project
+sections:
+- name: Networking
+  items: # An array of items
+  - title: Reverse Proxy
+    description: Traefik dashboard
+    icon: favicon
+    url: https://traefik.local.home-project.online
+  - title: DNS Server
+    description: Pi-hole dashboard
+    icon: favicon
+    url: https://pihole.local.home-project.online

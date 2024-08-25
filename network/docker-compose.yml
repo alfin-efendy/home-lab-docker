@@ -1,0 +1,116 @@
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token eyJhIjoiNTVjZmQzNzczMjhjZjYyZWFkZWU1ZmIxNjYxMDgzNzkiLCJ0IjoiMjcwYjY5ZTUtYzMyZC00MWIxLTgxN2ItY2Y5ZjEyODY5NjZjIiwicyI6Ik9XSmhNMlJpTXpndE16TXdOeTAwWmpRM0xXRm1Oemd0T0RZM09UQXhOV1UzT0RnMiJ9
+    restart: always
+
+  traefik:
+    container_name: traefik
+    hostname: traefik
+    image: traefik:v3.1
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    command:
+      - "--global.checkNewVersion=true"
+      - "--global.sendAnonymousUsage=false"
+      - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--api.debug=true"
+      - "--providers.docker=true"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+      - "--serversTransport.insecureSkipVerify=true"
+      - "--certificatesResolvers.cloudflare.acme.email=alfin1993@gmail.com"
+      - "--certificatesResolvers.cloudflare.acme.storage=/ssl-certs/acme.json"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge=true"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge.delaybeforecheck=0"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
+    volumes:
+      # - ./config/traefik:/etc/traefik
+      - traefik-ssl-certs:/ssl-certs
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      TZ: Asia/Jakarta
+      CLOUDFLARE_EMAIL: alfin1993@gmail.com
+      CLOUDFLARE_DNS_API_TOKEN: 8MWfIUlLhU5VFGWzDc0RJ3-UbvhRegLmJ7sMwvfh
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.local.home-project.online`)"
+      - "traefik.http.routers.traefik.entrypoints=web"
+      - "traefik.http.routers.traefik-secure.rule=Host(`traefik.local.home-project.online`)"
+      - "traefik.http.routers.traefik-secure.entrypoints=websecure"
+      - "traefik.http.routers.traefik-secure.service=api@internal"
+      - "traefik.http.routers.traefik-secure.tls=true"
+      - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
+      - "traefik.http.routers.traefik.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.ssl-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+    networks:
+      - micro-service-network
+
+  pihole:
+    container_name: pihole
+    hostname: pihole
+    image: pihole/pihole:latest
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "67:67/udp"
+    environment:
+      TZ: 'Asia/Jakarta'
+      WEBPASSWORD: 'kmzway87aa'
+      FTLCONF_LOCAL_IPV4: 192.168.1.16
+      PROXY_LOCATION: pihole
+      VIRTUAL_HOST: pihole.home-project.online
+      VIRTUAL_PORT: 80
+    volumes:
+      - pihole:/etc/pihole
+      - dnsmasq:/etc/dnsmasq.d
+    cap_add:
+      - NET_ADMIN
+    restart: always
+    extra_hosts:
+      - 'nw2master.bioware.com nwn2.master.gamespy.com:0.0.0.0'
+      - '.local.home-project.online:192.168.1.16'
+      - '*.local.home-project.online:192.168.1.16'
+      - 'traefik.local.home-project.online:192.168.1.16'
+      - 'pihole.local.home-project.online:192.168.1.16'
+      - 'dash.local.home-project.online:192.168.1.16'
+    networks:
+      - micro-service-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.pihole.rule=Host(`pihole.local.home-project.online`)"
+      - "traefik.http.routers.pihole.entrypoints=web"
+      - "traefik.http.routers.pihole.middlewares=https-redirect"
+      - "traefik.http.routers.pihole.middlewares=strip-prefix,add-prefix"
+      - "traefik.http.routers.pihole-secure.rule=Host(`pihole.local.home-project.online`)"
+      - "traefik.http.routers.pihole-secure.entrypoints=websecure"
+      - "traefik.http.routers.pihole-secure.service=pihole"
+      - "traefik.http.routers.pihole-secure.tls=true"
+      - "traefik.http.routers.pihole-secure.tls.certresolver=cloudflare"
+      - "traefik.http.routers.pihole-secure.middlewares=strip-prefix,add-prefix"
+      - "traefik.http.services.pihole.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.ssl-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.strip-prefix.stripprefix.prefixes=/admin"
+      - "traefik.http.middlewares.add-prefix.addprefix.prefix=/admin"
+
+volumes:
+  pihole:
+    driver: local
+  dnsmasq:
+    driver: local
+  traefik-ssl-certs:
+    driver: local
+
+networks:
+  micro-service-network:
+    external: true

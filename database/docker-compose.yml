@@ -1,0 +1,86 @@
+version: '3.8'
+services:
+  ### ===================
+  ### SQL DATABASE
+  ### ===================
+  postgres:
+    container_name: postgres
+    hostname: postgres
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - '5432:5432'
+    volumes:
+      - progresDB:/var/lib/postgresql/data
+    networks:
+      - micro-service-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  ### ===================
+  ### REDIS SERVER
+  ### ===================
+  redis:
+    container_name: redis
+    hostname: redis
+    image: redis:alpine
+    restart: always
+    command: ["redis-server", "--bind", "redis", "--port", "6379"]
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisDB:/data
+    networks:
+      - micro-service-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  ### ===================
+  ### ETCD SERVER
+  ### ===================
+  etcd:
+    container_name: etcd
+    hostname: etcd
+    image: bitnami/etcd:3.5.11
+    restart: always
+    volumes:
+      - etcd_data:/bitnami/etcd
+    environment:
+      ETCD_ENABLE_V2: "true"
+      ALLOW_NONE_AUTHENTICATION: "yes"
+      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd:2379"
+      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
+    ports:
+      - "2379:2379/tcp"
+    networks:
+      micro-service-network:
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health", "--endpoints=http://etcd:2379"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+### ========================
+### VOLUMES PERSISTENT DATA
+### ========================
+volumes:
+  redisDB:
+    driver: local
+  progresDB:
+    driver: local
+  etcd_data:
+    driver: local
+### ===================================
+### NETWORKS GROUP FOR ONE SAME SERVICE
+### ===================================
+networks:
+  micro-service-network:
+    external: true

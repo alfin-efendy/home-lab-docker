@@ -1,0 +1,109 @@
+conf:
+  listen:
+    host: 0.0.0.0 # `manager api` listening ip or host name
+    port: 9000 # `manager api` listening port
+  etcd:
+    endpoints: # supports defining multiple etcd host addresses for an etcd cluster
+      - etcd:2379
+        # etcd basic auth info
+    # username: "root"    # ignore etcd username if not enable etcd auth
+    # password: "123456"  # ignore etcd password if not enable etcd auth
+  log:
+    error_log:
+      level: warn # supports levels, lower to higher: debug, info, warn, error, panic, fatal
+      file_path:
+        logs/error.log # supports relative path, absolute path, standard output
+        # such as: logs/error.log, /tmp/logs/error.log, /dev/stdout, /dev/stderr
+  security:
+    access_control_allow_credentials: true # support using custom cors configration
+    access_control_allow_headers: "Authorization"
+    access_control-allow_methods: "*"
+    x_frame_options: "allow-from *"
+    content_security_policy: "frame-src *;"
+
+authentication:
+  secret:
+    W@3![z(.xegT~zE@)gWrH # secret for jwt token generation.
+    # NOTE: Highly recommended to modify this value to protect `manager api`.
+    # if it's default value, when `manager api` start, it will generate a random string to replace it.
+  expire_time: 3600 # jwt token expire time, in second
+  users:
+    - username: admin # username and password for login `manager api`
+      password: admin
+
+plugins:    # plugin list
+    - api-breaker
+    - authz-casbin
+    - authz-casdoor
+    - authz-keycloak
+    - aws-lambda
+    - azure-functions
+    - basic-auth
+    - clickhouse-logger
+    - client-control
+    - consumer-restriction
+    - cors
+    - csrf
+    - datadog
+    - echo
+    - error-log-logger
+    - ext-plugin-post-req
+    - ext-plugin-post-resp
+    - ext-plugin-pre-req
+    - fault-injection
+    - file-logger
+    - forward-auth
+    - google-cloud-logging
+    - grpc-transcode
+    - grpc-web
+    - gzip
+    - hmac-auth
+    - http-logger
+    - ip-restriction
+    - jwt-auth
+    - kafka-logger
+    - kafka-proxy
+    - key-auth
+    - ldap-auth
+    - limit-conn
+    - limit-count
+    - limit-req
+    - loggly
+    - mocking
+    - opa
+    - openid-connect
+    - opentelemetry
+    - openwhisk
+    - prometheus
+    - proxy-cache
+    - proxy-control
+    - proxy-mirror
+    - proxy-rewrite
+    - public-api
+    - real-ip
+    - redirect
+    - referer-restriction
+    - request-id
+    - request-validation
+    - response-rewrite
+    - rocketmq-logger
+    - server-info
+    - serverless-post-function
+    - serverless-pre-function
+    - skywalking
+    - skywalking-logger
+    - sls-logger
+    - splunk-hec-logging
+    - syslog
+    - tcp-logger
+    - traffic-split
+    - ua-restriction
+    - udp-logger
+    - uri-blocker
+    - wolf-rbac
+    - zipkin
+    - elasticsearch-logge
+    - openfunction
+    - tencent-cloud-cls
+    - ai
+    - cas-auth
